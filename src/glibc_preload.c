@@ -44,12 +44,29 @@ static const char* const LIBRARY_PATH[] = {
 	"/usr/lib"
 };
 
+static const char* const BIN_EXCLUDE_PATH[] = {
+	"/usr/local/bin",
+	"/usr/bin",
+	"/usr/local/sbin",
+	"/usr/sbin",
+	"/sbin",
+	"/bin"
+};
+
 int execve(const char* pathname, char* const argv[], char* const envp[]) {
 	
 	int (*__execve__)(const char* pathname, char* const argv[], char* const envp[]) = dlsym(RTLD_NEXT, "execve");
 	
 	if (__execve__ == NULL) {
 		return -1;
+	}
+	
+	for (size_t index = 0; index < sizeof(BIN_EXCLUDE_PATH) / sizeof(*BIN_EXCLUDE_PATH); index++) {
+		const char* const item = BIN_EXCLUDE_PATH[index];
+		
+		if (strncmp(item, pathname, strlen(item)) == 0) {
+			return (*__execve__)(pathname, argv, envp);
+		}
 	}
 	
 	int fd = open(pathname, O_RDONLY);
